@@ -184,7 +184,7 @@ jobs:
           Compress-Archive -Path release/* -DestinationPath lecture-transcriber-${{ needs.preflight.outputs.release_tag }}-${{ matrix.target }}.zip -Force
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: lecture-transcriber-${{ matrix.target }}
           path: |
