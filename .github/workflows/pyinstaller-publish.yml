@@ -1,0 +1,217 @@
+name: Publish PyInstaller binaries
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Optional semantic version tag to publish (e.g. v0.1.0)
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  preflight:
+    name: Preflight checks
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.release_tag.outputs.value }}
+      app_version: ${{ steps.project_meta.outputs.version }}
+      app_name: ${{ steps.project_meta.outputs.name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify pyproject config and entrypoints
+        id: project_meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib
+          import tomllib
+
+          pyproject_path = pathlib.Path('pyproject.toml')
+          if not pyproject_path.exists():
+              raise SystemExit('Missing pyproject.toml')
+
+          data = tomllib.loads(pyproject_path.read_text(encoding='utf-8'))
+          project = data.get('project', {})
+          scripts = project.get('scripts', {})
+
+          missing = []
+          name = project.get('name')
+          version = project.get('version')
+          if not name:
+              missing.append('project.name')
+          if not version:
+              missing.append('project.version')
+          entrypoint = scripts.get('lecture-transcriber')
+          if not entrypoint:
+              missing.append("project.scripts['lecture-transcriber']")
+
+          required_files = [
+              pathlib.Path('src/lecture_transcriber/__main__.py'),
+              pathlib.Path('src/lecture_transcriber/app.py'),
+          ]
+          for file_path in required_files:
+              if not file_path.exists():
+                  missing.append(str(file_path))
+
+          if missing:
+              raise SystemExit('Missing required config/files: ' + ', '.join(missing))
+
+          print(f'version={version}')
+          print(f'name={name}')
+          with open('/tmp/project_meta.out', 'w', encoding='utf-8') as fh:
+              fh.write(f'version={version}\n')
+              fh.write(f'name={name}\n')
+          PY
+
+          cat /tmp/project_meta.out >> "$GITHUB_OUTPUT"
+
+      - name: Resolve release tag
+        id: release_tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.project_meta.outputs.version }}"
+          INPUT_TAG="${{ inputs.release_tag }}"
+
+          if [[ -n "$INPUT_TAG" ]]; then
+            TAG="$INPUT_TAG"
+          elif [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="v${VERSION}"
+          fi
+
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "Resolved tag '$TAG' is not semantic (expected vX.Y.Z)." >&2
+            exit 1
+          fi
+
+          echo "value=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Validate Python dependencies required for packaging
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e . pyinstaller
+          python - <<'PY'
+          import importlib.util
+
+          required = ["tkinter", "groq", "pydub", "PyInstaller"]
+          missing = [name for name in required if importlib.util.find_spec(name) is None]
+          if missing:
+              raise SystemExit("Missing required packages/modules: " + ", ".join(missing))
+          print("All required modules for PyInstaller build are available.")
+          PY
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: preflight
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-amd64
+            archive_ext: tar.gz
+          - os: windows-latest
+            target: windows-amd64
+            archive_ext: zip
+          - os: macos-13
+            target: macos-amd64
+            archive_ext: tar.gz
+          - os: macos-14
+            target: macos-arm64
+            archive_ext: tar.gz
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e . pyinstaller
+
+      - name: Build executable with PyInstaller
+        shell: bash
+        run: |
+          set -euo pipefail
+          pyinstaller --noconfirm --clean --onefile \
+            --name lecture-transcriber \
+            --hidden-import groq \
+            --hidden-import pydub \
+            --collect-all groq \
+            --collect-all pydub \
+            src/lecture_transcriber/__main__.py
+
+      - name: Package binary (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          cp dist/lecture-transcriber release/
+          cp README.md release/
+          tar -czf lecture-transcriber-${{ needs.preflight.outputs.release_tag }}-${{ matrix.target }}.tar.gz -C release .
+
+      - name: Package binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          Copy-Item dist/lecture-transcriber.exe release/lecture-transcriber.exe
+          Copy-Item README.md release/README.md
+          Compress-Archive -Path release/* -DestinationPath lecture-transcriber-${{ needs.preflight.outputs.release_tag }}-${{ matrix.target }}.zip -Force
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lecture-transcriber-${{ matrix.target }}
+          path: |
+            lecture-transcriber-${{ needs.preflight.outputs.release_tag }}-${{ matrix.target }}.tar.gz
+            lecture-transcriber-${{ needs.preflight.outputs.release_tag }}-${{ matrix.target }}.zip
+
+  publish:
+    name: Publish release assets
+    needs:
+      - preflight
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Upload binaries to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.preflight.outputs.release_tag }}
+          files: |
+            artifacts/**/*.tar.gz
+            artifacts/**/*.zip
+          fail_on_unmatched_files: true
+          generate_release_notes: false

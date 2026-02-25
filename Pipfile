@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+groq = "*"
+pydub = "*"
+audioop-lts = {version = "*", markers = "python_version >= '3.13'"}
+
+[dev-packages]
+
+[scripts]
+start = "PYTHONPATH=src python -m lecture_transcriber"
+
+[requires]
+python_version = "3.14"
