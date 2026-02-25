@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lecture-transcriber"
+version = "0.1.0"
+description = "Tkinter app for lecture transcription and study materials generation with Groq"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "groq",
+  "pydub",
+  "audioop-lts; python_version >= '3.13'",
+]
+
+[project.scripts]
+lecture-transcriber = "lecture_transcriber.app:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
