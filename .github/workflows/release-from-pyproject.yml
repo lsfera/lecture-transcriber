@@ -1,0 +1,95 @@
+name: Release from pyproject version
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      release_exists: ${{ steps.check.outputs.exists }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read version from pyproject.toml
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(python - <<'PY'
+          import pathlib
+          import tomllib
+
+          data = tomllib.loads(pathlib.Path('pyproject.toml').read_text(encoding='utf-8'))
+          print(data['project']['version'])
+          PY
+          )
+          TAG="v${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Resolved release tag: ${TAG}"
+
+      - name: Check if release exists
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = `${{ steps.version.outputs.tag }}`;
+            try {
+              await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              });
+              core.info(`Release ${tag} already exists.`);
+              core.setOutput('exists', 'true');
+            } catch (error) {
+              if (error.status === 404) {
+                core.info(`Release ${tag} does not exist yet.`);
+                core.setOutput('exists', 'false');
+              } else {
+                throw error;
+              }
+            }
+
+  create_release:
+    needs: prepare
+    if: needs.prepare.outputs.release_exists == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub release from pyproject version
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          name: ${{ needs.prepare.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+
+  publish_images:
+    needs:
+      - prepare
+      - create_release
+    if: needs.prepare.outputs.release_exists == 'false'
+    uses: ./.github/workflows/docker-publish.yml
+    with:
+      release_tag: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit
+
+  publish_binaries:
+    needs:
+      - prepare
+      - create_release
+    if: needs.prepare.outputs.release_exists == 'false'
+    uses: ./.github/workflows/pyinstaller-publish.yml
+    with:
+      release_tag: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit
