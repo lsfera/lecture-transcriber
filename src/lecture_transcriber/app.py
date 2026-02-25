@@ -1,4 +1,6 @@
 import os
+import sys
+import shutil
 import threading
 import tempfile
 import math
@@ -1060,7 +1062,48 @@ class LectureTranscriberApp(tk.Tk):
             raise TypeError("Widget Tkinter senza metodo yview valido.")
         return cast(ScrollbarCommand, yview)
 
+    def _resolve_ffmpeg_binary(self) -> str:
+        env_binary = os.getenv("FFMPEG_BINARY", "").strip()
+        if env_binary:
+            return env_binary
+
+        candidates: list[str] = []
+        if getattr(sys, "frozen", False):
+            bundle_dir = getattr(sys, "_MEIPASS", "")
+            exec_dir = os.path.dirname(sys.executable)
+            if bundle_dir:
+                candidates.extend([
+                    os.path.join(bundle_dir, "ffmpeg"),
+                    os.path.join(bundle_dir, "ffmpeg.exe"),
+                ])
+            candidates.extend([
+                os.path.join(exec_dir, "ffmpeg"),
+                os.path.join(exec_dir, "ffmpeg.exe"),
+            ])
+
+        for candidate in candidates:
+            if candidate and os.path.isfile(candidate):
+                return candidate
+
+        found = shutil.which("ffmpeg") or shutil.which("avconv")
+        if found:
+            return found
+
+        raise RuntimeError(
+            "FFmpeg non trovato. Installa ffmpeg (o avconv) e assicurati che sia nel PATH, "
+            "oppure imposta la variabile FFMPEG_BINARY con il percorso completo dell'eseguibile."
+        )
+
+    def _configure_audio_binaries(self) -> None:
+        ffmpeg_binary = self._resolve_ffmpeg_binary()
+        setattr(AudioSegment, "converter", ffmpeg_binary)
+        setattr(AudioSegment, "ffmpeg", ffmpeg_binary)
+        ffprobe_binary = shutil.which("ffprobe") or shutil.which("avprobe")
+        if ffprobe_binary:
+            setattr(AudioSegment, "ffprobe", ffprobe_binary)
+
     def _load_audio_segment(self, path: str) -> AudioSegmentLike:
+        self._configure_audio_binaries()
         from_file = getattr(AudioSegment, "from_file", None)
         if not callable(from_file):
             raise RuntimeError("pydub AudioSegment.from_file non disponibile.")

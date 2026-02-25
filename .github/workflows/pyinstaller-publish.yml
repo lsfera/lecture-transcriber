@@ -152,6 +152,28 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e . pyinstaller
 
+      - name: Install FFmpeg (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            brew update
+            brew install ffmpeg
+          fi
+          command -v ffmpeg
+
+      - name: Install FFmpeg (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install ffmpeg -y
+          $ffmpeg = (Get-Command ffmpeg -ErrorAction Stop).Source
+          Write-Host "ffmpeg: $ffmpeg"
+
       - name: Build executable with PyInstaller
         shell: bash
         run: |
@@ -171,6 +193,8 @@ jobs:
           set -euo pipefail
           mkdir -p release
           cp dist/lecture-transcriber release/
+          cp "$(command -v ffmpeg)" release/ffmpeg
+          chmod +x release/ffmpeg
           cp README.md release/
           tar -czf lecture-transcriber-${{ needs.preflight.outputs.release_tag }}-${{ matrix.target }}.tar.gz -C release .
 
@@ -180,6 +204,8 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path release | Out-Null
           Copy-Item dist/lecture-transcriber.exe release/lecture-transcriber.exe
+          $ffmpeg = (Get-Command ffmpeg -ErrorAction Stop).Source
+          Copy-Item $ffmpeg release/ffmpeg.exe
           Copy-Item README.md release/README.md
           Compress-Archive -Path release/* -DestinationPath lecture-transcriber-${{ needs.preflight.outputs.release_tag }}-${{ matrix.target }}.zip -Force
 

@@ -74,7 +74,6 @@ Artifact naming format:
 
 - `lecture-transcriber-<tag>-linux-amd64.tar.gz`
 - `lecture-transcriber-<tag>-windows-amd64.zip`
-- `lecture-transcriber-<tag>-macos-amd64.tar.gz`
 - `lecture-transcriber-<tag>-macos-arm64.tar.gz`
 
 Download from: `https://github.com/lsfera/lecture-transcriber/releases`
@@ -85,6 +84,7 @@ The packaged app reads configuration from environment variables:
 
 - `GROQ_API_KEY` (required): API key used for transcription and LLM generation
 - `UI_LANG` (optional): `it` (default) or `en`
+- `FFMPEG_BINARY` (optional): override path to `ffmpeg` executable (release bundles already include `ffmpeg`)
 
 Linux/macOS (single run):
 
