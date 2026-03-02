@@ -17,31 +17,6 @@ python -m lecture_transcriber
 
 Legacy entrypoint is still available at `project/main.py`.
 
-
-
-## Run with Pipenv
-
-```bash
-pipenv install
-pipenv run start
-```
-
-## Pipenv development commands
-
-```bash
-# Open subshell in virtualenv
-pipenv shell
-
-# Recreate lock file after dependency changes
-pipenv lock
-
-# Install exactly from lock file
-pipenv sync
-
-# Reinstall environment from scratch
-pipenv --rm && pipenv install
-```
-
 ## Docker image publishing
 
 This repository includes a multi-stage `Dockerfile` that builds wheel artifacts and installs the app from those artifacts in the runtime image.
@@ -82,9 +57,45 @@ Download from: `https://github.com/lsfera/lecture-transcriber/releases`
 
 The packaged app reads configuration from environment variables:
 
-- `GROQ_API_KEY` (required): API key used for transcription and LLM generation
+- `GROQ_API_KEY` (required only when a selected provider is `groq`): API key used for Groq transcription and/or Groq LLM generation
 - `UI_LANG` (optional): `it` (default) or `en`
+- `AUDIO_INITIAL_DIR` (optional): initial folder for the audio file picker; if unset, the app uses the user home/profile directory
 - `FFMPEG_BINARY` (optional): override path to `ffmpeg` executable (release bundles already include `ffmpeg`)
+- `TRANSCRIPTION_PROVIDER` (optional): `groq` (default) or `faster-whisper`
+- `WHISPER_MODEL` (optional): Groq Whisper model for transcription when `TRANSCRIPTION_PROVIDER=groq` (default `whisper-large-v3-turbo`)
+- `FASTER_WHISPER_MODEL` (optional): local model name for faster-whisper (default `small`)
+- `HUGGINGFACE_API_KEY` (optional): Hugging Face access token used to download gated/private faster-whisper models
+- `FASTER_WHISPER_DEVICE` (optional): `cpu`, `cuda`, or `auto` (default `auto`)
+- `FASTER_WHISPER_COMPUTE_TYPE` (optional): faster-whisper compute type (default `int8`)
+- `LLM_PROVIDER` (optional): `groq` (default) or `ollama` for local LLM post-processing
+- `LLM_MODEL` (optional): Groq model name when `LLM_PROVIDER=groq`
+- `OLLAMA_BASE_URL` (optional): Ollama endpoint (default `http://127.0.0.1:11434`)
+- `OLLAMA_MODEL` (optional): Ollama model name (default `llama3.2:3b`)
+
+In the GUI, the transcription model dropdown is provider-dependent:
+
+- `groq` → Groq Whisper models (`whisper-large-v3-turbo`, `whisper-large-v3`)
+- `faster-whisper` → local faster-whisper models (`tiny`, `base`, `small`, `medium`, `large-v2`, `large-v3`, `distil-large-v3`)
+
+Fully local mode (no Groq for transcription or LLM):
+
+```bash
+ollama serve
+ollama pull llama3.2:3b
+TRANSCRIPTION_PROVIDER=faster-whisper \
+LLM_PROVIDER=ollama \
+FASTER_WHISPER_MODEL=small \
+OLLAMA_MODEL=llama3.2:3b \
+./lecture-transcriber
+```
+
+Use local Ollama for LLM post-processing (no Groq key required for summaries/flashcards):
+
+```bash
+OLLAMA_BASE_URL=http://127.0.0.1:11434 ollama serve
+OLLAMA_MODEL=llama3.2:3b ollama pull llama3.2:3b
+LLM_PROVIDER=ollama UI_LANG=en ./lecture-transcriber
+```
 
 Linux/macOS (single run):
 

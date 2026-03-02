@@ -15,9 +15,7 @@ dist/
 .eggs/
 *.whl
 
-# Virtual environments
-.venv/
-venv/
+# Python environments
 env/
 
 # Test and tooling caches

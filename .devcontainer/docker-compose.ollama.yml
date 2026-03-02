@@ -1,0 +1,58 @@
+version: '3.8'
+services:
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - devcontainer_shared
+    # Uncomment for GPU:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  ollama-init:
+    image: ollama/ollama
+    depends_on:
+      - ollama
+    restart: "no"
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    volumes:
+      - ollama_data:/root/.ollama
+    command: ["pull", "llama3.2:3b"]
+    networks:
+      - devcontainer_shared
+
+  ollama-webui:
+    image: ghcr.io/ollama-webui/ollama-webui:main
+    container_name: ollama-webui
+    ports: ["3000:8080"]
+    volumes:
+      - ollama-webui:/app/backend/data
+    depends_on:
+      - ollama
+    environment:
+      - 'OLLAMA_API_BASE_URL=http://ollama:11434/api'
+      - 'WEBUI_AUTH=false'
+      - 'ENABLE_LOGIN_FORM=false'
+      - 'ENABLE_INITIAL_ADMIN_SIGNUP=false'
+    networks:
+      - devcontainer_shared
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  ollama-webui:
+  
+networks:
+  devcontainer_shared:
+    name: lecture-transcriber-dev-net
+    external: true

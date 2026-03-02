@@ -10,9 +10,7 @@ dist/
 .eggs/
 pip-wheel-metadata/
 
-# Virtual environments
-.venv/
-venv/
+# Python environments
 env/
 ENV/
 

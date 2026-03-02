@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   app:
-    image: mcr.microsoft.com/devcontainers/python:3-bookworm
+    image: mcr.microsoft.com/devcontainers/python:3.14-bookworm
     env_file:
       - .env
     environment:
@@ -12,4 +12,11 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ../input:/input:cached
       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - devcontainer_shared
     command: sleep infinity
+
+networks:
+  devcontainer_shared:
+    name: lecture-transcriber-dev-net
+    driver: bridge
