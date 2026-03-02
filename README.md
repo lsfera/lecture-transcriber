@@ -1,6 +1,8 @@
 # Lecture Transcriber
 
-Python project structured with a `src/` package layout.
+This software was originally shared by [specchioinfranto](https://youtu.be/No0DJwVNEtE?t=226).
+
+It's a Tkinter app for lecture transcription and study materials generation (using Grok and|or faster whisperer + Ollama).
 
 ## Run locally
 
@@ -51,7 +53,7 @@ Artifact naming format:
 - `lecture-transcriber-<tag>-windows-amd64.zip`
 - `lecture-transcriber-<tag>-macos-arm64.tar.gz`
 
-Download from: `https://github.com/lsfera/lecture-transcriber/releases`
+Download from: `[releases](./releases)`
 
 ### Passing configuration variables to executables
 

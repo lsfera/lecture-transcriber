@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lecture-transcriber"
 version = "0.1.0"
-description = "Tkinter app for lecture transcription and study materials generation with Groq"
+description = "Tkinter app for lecture transcription and study materials generation"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
