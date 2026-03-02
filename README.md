@@ -53,7 +53,7 @@ Artifact naming format:
 - `lecture-transcriber-<tag>-windows-amd64.zip`
 - `lecture-transcriber-<tag>-macos-arm64.tar.gz`
 
-Download from: `[releases](./releases)`
+Download from: [releases](./releases)
 
 ### Passing configuration variables to executables
 
