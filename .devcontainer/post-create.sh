@@ -10,7 +10,8 @@ else
 fi
 
 "${APT_PREFIX[@]}" apt-get update
-"${APT_PREFIX[@]}" apt-get install -y ffmpeg
+"${APT_PREFIX[@]}" apt-get install -y --no-install-recommends ffmpeg
+"${APT_PREFIX[@]}" rm -rf /var/lib/apt/lists/*
 
 PYTHON_ABI_VERSION="$($PYTHON_BIN -c 'import sys; print(f"{sys.version_info.major}{sys.version_info.minor}")')"
 STDLIB_ZIP="/usr/local/lib/python${PYTHON_ABI_VERSION}.zip"
@@ -27,7 +28,6 @@ print(f"Created {path}")
 PY
 fi
 
-"$PYTHON_BIN" -m pip install --user --upgrade pip
 "$PYTHON_BIN" -m pip install --user -e .
 "$PYTHON_BIN" -m pip install --user debugpy
 

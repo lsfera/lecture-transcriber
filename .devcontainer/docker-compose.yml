@@ -1,17 +1,15 @@
-version: "3.8"
-
 services:
   app:
-    image: mcr.microsoft.com/devcontainers/python:3.14-bookworm
+    image: mcr.microsoft.com/devcontainers/python:3.14-trixie
     env_file:
       - .env
     environment:
-      - DISPLAY=$IP:0
+      - DISPLAY=${DISPLAY_VALUE:-:0}
     volumes:
       - ..:/workspace:cached
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ../input:/input:cached
-      - /var/run/docker.sock:/var/run/docker.sock
+      - pip-cache:/home/vscode/.cache/pip
     networks:
       - devcontainer_shared
     command: sleep infinity
@@ -20,3 +18,6 @@ networks:
   devcontainer_shared:
     name: lecture-transcriber-dev-net
     driver: bridge
+
+volumes:
+  pip-cache:
