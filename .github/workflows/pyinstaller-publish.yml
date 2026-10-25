@@ -25,12 +25,12 @@ jobs:
       app_name: ${{ steps.project_meta.outputs.name }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
-          python-version: '3.11'
+          python-version: '3.14'
 
       - name: Verify pyproject config and entrypoints
         id: project_meta
@@ -138,12 +138,12 @@ jobs:
             archive_ext: tar.gz
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
-          python-version: '3.11'
+          python-version: '3.14'
 
       - name: Install build dependencies
         shell: bash
@@ -161,7 +161,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y ffmpeg
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
-            brew update
+            export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1
             brew install ffmpeg
           fi
           command -v ffmpeg
@@ -230,7 +230,7 @@ jobs:
           path: artifacts
 
       - name: Upload binaries to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.preflight.outputs.release_tag }}
           files: |
