@@ -28,6 +28,14 @@ esac
 mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
 touch "$HOME/.ssh/known_hosts"
 
+# Make sure the host ssh-agent has a key to forward into the container. Non-fatal:
+# the script may need a passphrase prompt, which initializeCommand may not provide.
+if ! ssh-add -l >/dev/null 2>&1; then
+	echo "No keys in the host ssh-agent; running setup-ssh-agent.sh" >&2
+	bash "$(dirname "$0")/scripts/setup-ssh-agent.sh" >&2 ||
+		echo "Warning: SSH agent setup failed; run .devcontainer/scripts/setup-ssh-agent.sh manually" >&2
+fi
+
 ENV_FILE=".devcontainer/.env"
 touch "$ENV_FILE"
 grep -v -e '^IP=' -e '^DISPLAY_VALUE=' "$ENV_FILE" > "$ENV_FILE.tmp" || true
