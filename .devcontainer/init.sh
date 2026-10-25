@@ -24,6 +24,10 @@ Darwin)
 	;;
 esac
 
+# Ensure the known_hosts file bind-mounted by devcontainer.json exists on the host.
+mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+touch "$HOME/.ssh/known_hosts"
+
 ENV_FILE=".devcontainer/.env"
 touch "$ENV_FILE"
 grep -v -e '^IP=' -e '^DISPLAY_VALUE=' "$ENV_FILE" > "$ENV_FILE.tmp" || true

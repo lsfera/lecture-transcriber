@@ -5,6 +5,9 @@
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
 	"workspaceFolder": "/workspace",
+	"mounts": [
+		"source=${localEnv:HOME}/.ssh/known_hosts,target=/home/vscode/.ssh/known_hosts,type=bind,consistency=cached"
+	],
 	"initializeCommand": "bash .devcontainer/init.sh",
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {
