@@ -19,6 +19,25 @@ python -m lecture_transcriber
 
 Legacy entrypoint is still available at `project/main.py`.
 
+## Dev container
+
+The `.devcontainer/` setup runs the app in Docker (Python 3.14, ffmpeg installed on create) with GUI forwarding over X11.
+
+Requirements on the host:
+
+- Docker (Docker Desktop on macOS/Windows) and the VS Code Dev Containers extension.
+- **macOS:** [XQuartz](https://www.xquartz.org/) with *Settings > Security > Allow connections from network clients* enabled, and XQuartz running before the container starts. `xhost` (shipped with XQuartz) must be on `PATH`.
+- **Linux:** an X11 session (`$DISPLAY` set) and `xhost`. On Wayland-only desktops, run under XWayland.
+- Optional: an `input/` folder in the repo root, mounted at `/input`.
+
+`.devcontainer/init.sh` runs on the host before the container is created. It runs `xhost +local:docker` and writes `DISPLAY_VALUE` to the git-ignored `.devcontainer/.env`: the LAN IP (or `host.docker.internal`) on macOS, the host's `$DISPLAY` on Linux. Run `bash .devcontainer/init.sh` once if you use plain `docker compose` instead of VS Code.
+
+Optional Ollama stack (create the dev container first, since it owns the shared `lecture-transcriber-dev-net` network). Ollama is on `localhost:11434` and Open WebUI on `localhost:3000`, both bound to localhost only:
+
+```bash
+docker compose -f .devcontainer/docker-compose.ollama.yml up -d
+```
+
 ## Docker image publishing
 
 This repository includes a multi-stage `Dockerfile` that builds wheel artifacts and installs the app from those artifacts in the runtime image.
