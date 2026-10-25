@@ -5,11 +5,13 @@ services:
       - .env
     environment:
       - DISPLAY=${DISPLAY_VALUE:-:0}
+      - SSH_AUTH_SOCK=/ssh-agent.sock
     volumes:
       - ..:/workspace:cached
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ../input:/input:cached
       - pip-cache:/home/vscode/.cache/pip
+      - /run/host-services/ssh-auth.sock:/ssh-agent.sock
     networks:
       - devcontainer_shared
     command: sleep infinity
