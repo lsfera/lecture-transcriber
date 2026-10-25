@@ -11,7 +11,7 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ../input:/input:cached
       - pip-cache:/home/vscode/.cache/pip
-      - /run/host-services/ssh-auth.sock:/ssh-agent.sock
+      - ${SSH_SOCK_HOST:-/run/host-services/ssh-auth.sock}:/ssh-agent.sock
     networks:
       - devcontainer_shared
     command: sleep infinity
