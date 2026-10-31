@@ -1,6 +1,6 @@
 services:
   ollama:
-    image: ollama/ollama:0.40.11
+    image: ollama/ollama:0.40.13
     container_name: ollama
     ports:
       - "127.0.0.1:11434:11434"
@@ -24,7 +24,7 @@ services:
     #           capabilities: [gpu]
 
   ollama-init:
-    image: ollama/ollama:0.40.11
+    image: ollama/ollama:0.40.13
     depends_on:
       ollama:
         condition: service_healthy
