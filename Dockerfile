@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.28
 
-FROM python:3.14-slim AS builder
+FROM python:3.15-slim AS builder
 
 WORKDIR /build
 
@@ -15,7 +15,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     && python -m build --wheel --outdir /artifacts
 
 
-FROM python:3.14-slim AS runtime
+FROM python:3.15-slim AS runtime
 
 WORKDIR /app
 
